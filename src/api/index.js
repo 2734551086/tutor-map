@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE || 'http://localhost:3001/api',
+  baseURL: import.meta.env.VITE_API_BASE || 'https://tutor-api-production-8f83.up.railway.app/api',
   timeout: 10000,
 })
 
