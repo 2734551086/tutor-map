@@ -39,8 +39,8 @@ router.get('/', optionalAuth, (req, res) => {
   }
 
   if (grade && grade !== 'all') {
-    clauses.push('r.grade LIKE ?')
-    params.push(`%${grade}%`)
+    clauses.push('r.grade = ?')
+    params.push(grade)
   }
 
   if (keyword && keyword.trim()) {
@@ -69,22 +69,25 @@ router.get('/', optionalAuth, (req, res) => {
   res.json(rows.map(toPublic))
 })
 
-router.get('/all', authRequired, (req, res) => {
-  const rows = db.prepare(`
-    SELECT ${REQUEST_FIELDS}
-    FROM requests r JOIN users u ON u.id = r.user_id
-    ORDER BY r.created_at DESC
-  `).all()
-  res.json(rows.map(toPublic))
-})
-
 router.get('/meta/filters', (req, res) => {
   const subjects = db.prepare(
     "SELECT DISTINCT subject FROM requests WHERE status = 'open' ORDER BY subject"
   ).all().map(r => r.subject)
   const grades = db.prepare(
-    "SELECT DISTINCT grade FROM requests WHERE status = 'open' ORDER BY grade"
+    "SELECT DISTINCT grade FROM requests WHERE status = 'open'"
   ).all().map(r => r.grade)
+  const gradeOrder = [
+    '幼儿园小班', '幼儿园中班', '幼儿园大班',
+    '小学一年级', '小学二年级', '小学三年级', '小学四年级', '小学五年级', '小学六年级',
+    '初中一年级', '初中二年级', '初中三年级',
+    '高中一年级', '高中二年级', '高中三年级',
+    '成人',
+  ]
+  const rank = g => {
+    const i = gradeOrder.indexOf(g)
+    return i === -1 ? gradeOrder.length : i
+  }
+  grades.sort((a, b) => rank(a) - rank(b))
   res.json({ subjects, grades })
 })
 

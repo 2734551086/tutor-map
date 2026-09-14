@@ -1,12 +1,16 @@
 <script setup>
 import { computed } from 'vue'
+import { useAuthStore } from '../stores/auth'
 
 const props = defineProps({
   request: { type: Object, required: true },
   selected: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['select'])
+const auth = useAuthStore()
+const emit = defineEmits(['select', 'contact'])
+
+const isOwn = computed(() => auth.user?.id && props.request.poster?.id === auth.user.id)
 
 const price = computed(() =>
   `${props.request.hourly_min}–${props.request.hourly_max}元/时`
@@ -64,7 +68,9 @@ const timeAgo = computed(() => {
     <div class="req-footer">
       <span class="poster">发布人：{{ request.poster?.name }}</span>
       <span v-if="request.poster?.role === 'parent'" class="poster-tag">家长</span>
-      <span class="contact-hint">点击卡片查看详情</span>
+      <span class="contact-hint" v-if="!isOwn">点击卡片查看详情</span>
+      <button v-if="!isOwn" class="contact-btn" @click.stop="emit('contact', request)">💬 联系</button>
+      <span v-else class="own-tag">我发布的</span>
     </div>
   </article>
 </template>
@@ -135,4 +141,21 @@ const timeAgo = computed(() => {
   font-weight: 600;
 }
 .contact-hint { margin-left: auto; color: var(--ink-3); }
+.contact-btn {
+  margin-left: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+.contact-btn:hover { background: var(--primary-dark); }
+.own-tag {
+  margin-left: 6px;
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 600;
+}
 </style>

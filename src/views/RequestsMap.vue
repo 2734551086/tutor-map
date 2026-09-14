@@ -1,8 +1,13 @@
 <script setup>
 import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '../api'
+import { useAuthStore } from '../stores/auth'
 import MapView from '../components/MapView.vue'
 import RequestCard from '../components/RequestCard.vue'
+
+const router = useRouter()
+const auth = useAuthStore()
 
 const mapRef = ref(null)
 const listRef = ref(null)
@@ -12,7 +17,6 @@ const activeKeyword = ref('')
 const searchSuggestions = ref([])
 const suggestLoading = ref(false)
 const showSuggest = ref(false)
-const hoverCoord = ref(null)
 const loading = ref(false)
 const loadError = ref('')
 const filterMeta = reactive({ subjects: [], grades: [] })
@@ -89,7 +93,6 @@ async function onSelectSuggestion(s) {
     } catch {}
   }
   if (s.location) {
-    hoverCoord.value = { lat: s.location.lat, lng: s.location.lng }
     mapRef.value?.focusTo(s.location.lat, s.location.lng, 14)
   }
   // 地名点选=定位查看附近，不应作为关键词过滤
@@ -141,6 +144,14 @@ function resetFilters() {
 const activeFilterCount = computed(() =>
   (filters.subject !== 'all' ? 1 : 0) + (filters.grade !== 'all' ? 1 : 0)
 )
+
+function onContactRequest(req) {
+  if (!auth.isLoggedIn) {
+    router.push({ path: '/login', query: { redirect: `/messages?user=${req.poster.id}&rid=${req.id}` } })
+    return
+  }
+  router.push({ path: '/messages', query: { user: req.poster.id, rid: req.id } })
+}
 
 watch(() => [filters.subject, filters.grade], () => {
   fetchRequests()
@@ -234,7 +245,7 @@ onMounted(async () => {
         <div ref="listRef" class="cards-scroll">
           <template v-if="requests.length">
             <div v-for="r in requests" :key="r.id" :data-id="r.id">
-              <RequestCard :request="r" :selected="r.id === selectedId" @select="onSelectRequest" />
+              <RequestCard :request="r" :selected="r.id === selectedId" @select="onSelectRequest" @contact="onContactRequest" />
             </div>
           </template>
           <div v-else-if="loading" class="empty">加载中…</div>
@@ -254,7 +265,7 @@ onMounted(async () => {
         </div>
         <div ref="listRef" class="sheet-scroll">
           <div v-for="r in requests" :key="r.id" :data-id="r.id">
-            <RequestCard :request="r" :selected="r.id === selectedId" @select="onSelectRequest" />
+            <RequestCard :request="r" :selected="r.id === selectedId" @select="onSelectRequest" @contact="onContactRequest" />
           </div>
           <div v-if="!requests.length && !loading" class="empty mobile-empty">
             <p class="empty-emoji">🗺️</p>

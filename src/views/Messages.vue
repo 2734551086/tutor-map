@@ -9,6 +9,7 @@ const router = useRouter()
 
 const conversations = ref([])
 const activeUserId = ref(null)
+const activeRequestId = ref(null)
 const messages = ref([])
 const msgInput = ref('')
 const chatLoading = ref(false)
@@ -16,6 +17,13 @@ const sendLoading = ref(false)
 const scrollRef = ref(null)
 
 let pollTimer = null
+let pollLock = false
+
+function nearBottom() {
+  const el = scrollRef.value
+  if (!el) return true
+  return el.scrollHeight - el.scrollTop - el.clientHeight < 40
+}
 
 async function loadConversations() {
   try {
@@ -45,6 +53,7 @@ async function sendMessage() {
   try {
     const msg = await api.post('/messages', {
       receiver_id: activeUserId.value,
+      request_id: activeRequestId.value,
       content,
     })
     messages.value.push(msg)
@@ -73,15 +82,32 @@ function formatTime(iso) {
 }
 
 async function poll() {
-  if (document.hidden) return
-  if (activeUserId.value) {
-    await openChat(activeUserId.value)
+  if (document.hidden || pollLock) return
+  pollLock = true
+  try {
+    if (activeUserId.value) {
+      const keepScroll = nearBottom()
+      const list = await api.get(`/messages/${activeUserId.value}`)
+      messages.value = list
+      if (keepScroll) {
+        await nextTick()
+        scrollToBottom()
+      }
+    }
+    await loadConversations()
+  } finally {
+    pollLock = false
   }
-  await loadConversations()
 }
 
 onMounted(async () => {
   await loadConversations()
+  const q = router.currentRoute.value.query
+  if (q.user && auth.isLoggedIn) {
+    activeRequestId.value = q.rid ? Number(q.rid) : null
+    await openChat(Number(q.user))
+    router.replace({ path: '/messages' })
+  }
   pollTimer = setInterval(poll, 4000)
 })
 

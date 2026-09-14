@@ -35,10 +35,10 @@ router.post('/register', (req, res) => {
   ).run(username, hash, name, role, phone || '', wechat || '')
 
   const user = db.prepare(
-    'SELECT id, username, name, role, phone, wechat, created_at FROM users WHERE id = ?'
+    'SELECT id, username, name, role, phone, wechat, subjects, created_at FROM users WHERE id = ?'
   ).get(result.lastInsertRowid)
 
-  res.json({ token: signToken(user), user })
+  res.json({ token: signToken(user), user: { ...user, subjects: JSON.parse(user.subjects || '[]') } })
 })
 
 // POST /api/auth/login

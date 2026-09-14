@@ -48,6 +48,13 @@ router.post('/', authRequired, (req, res) => {
   if (!receiver_id || !content || !String(content).trim()) {
     return res.status(400).json({ error: '接收者和消息内容不能为空' })
   }
+  if (Number(receiver_id) === req.user.id) {
+    return res.status(400).json({ error: '不能给自己发送消息' })
+  }
+  const receiver = db.prepare('SELECT id FROM users WHERE id = ?').get(receiver_id)
+  if (!receiver) {
+    return res.status(404).json({ error: '接收者不存在' })
+  }
   const result = db.prepare(
     `INSERT INTO messages (sender_id, receiver_id, request_id, content)
      VALUES (?, ?, ?, ?)`
