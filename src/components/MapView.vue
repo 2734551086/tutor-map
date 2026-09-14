@@ -23,7 +23,6 @@ const AMAP_SECURITY = import.meta.env.VITE_AMAP_SECURITY_CODE
 const mapContainer = ref(null)
 let map = null
 let markers = []
-let cluster = null
 let pickedMarker = null
 let loaded = false
 
@@ -37,7 +36,7 @@ async function loadMap() {
       key: AMAP_KEY,
       version: '2.0',
       ...(AMAP_SECURITY ? { securityJsCode: AMAP_SECURITY } : {}),
-      plugins: ['AMap.Scale', 'AMap.ToolBar', 'AMap.MarkerClusterer'],
+      plugins: ['AMap.Scale', 'AMap.ToolBar'],
     })
     const { AMap } = window
     const center = props.pickMode && props.pickCenter
@@ -113,15 +112,10 @@ function renderMarkers() {
     return marker
   })
 
-  if (AMap.MarkerClusterer) {
-    cluster = new AMap.MarkerClusterer(map, markers, { gridSize: 60 })
-  } else {
-    map.add(markers)
-  }
+  map.add(markers)
 }
 
 function clearMarkers() {
-  if (cluster) { cluster.setMarkers([]); cluster = null }
   if (markers.length) map?.remove(markers)
   markers = []
 }
