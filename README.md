@@ -164,6 +164,26 @@ SQLite 方案最简单，直接部署一台 Node 服务器：
 
 > SQLite 数据存在磁盘上，Railway 重启后可能丢失（免费计划）。若要持久化，建议在 [Railway 的 Volume](https://docs.railway.com/reference/volumes) 中给数据目录挂载持久卷，或换 PostgreSQL。
 
+### 前后端一体化 → Railway（推荐，无需域名）
+
+不想折腾两个平台？可以让后端 Express 同时托管前端构建产物，一个 Railway 服务就是完整网站：
+
+```bash
+# 1. 前端构建（VITE_API_BASE=/api 相对路径，与后端同源）
+cd tutor-map && npm run build
+
+# 2. 构建产物复制到后端静态目录
+cp -r dist server/public
+
+# 3. 部署（railway CLI，在 server 目录执行）
+cd server
+railway up
+```
+
+部署后整个网站就在一个域名下：`https://xxx.up.railway.app`（首页）与 `/api/*`（接口）同源，无需跨域、无需配置 VITE_API_BASE。
+
+> ⚠️ 注意：`railway up` 遵循 `.gitignore`，所以 `server/public/` **不要**加入 `.gitignore`（git 中保持未跟踪即可），否则前端文件不会被上传。每次前端改动后重新执行上面的 1→3 步。
+
 ### 后端 → 自有服务器
 
 ```bash
